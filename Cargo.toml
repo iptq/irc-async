@@ -1,0 +1,14 @@
+[package]
+name = "irc-async"
+version = "0.1.0"
+authors = ["Michael Zhang <iptq@protonmail.com>"]
+edition = "2018"
+
+[dependencies]
+bytes = "0.4"
+futures-util-preview = "0.3.0-alpha.19"
+derive_builder = "0.9"
+tokio = "0.2.0-alpha.6"
+tokio-tls = "0.3.0-alpha.6"
+native-tls = "0.2"
+rustyline = "5.0"
