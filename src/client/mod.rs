@@ -6,35 +6,26 @@ use std::pin::Pin;
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::task::{Context, Poll};
 
-use futures_util::stream::{SplitSink, SplitStream};
+use anyhow::Result;
+use futures::sink::SinkExt;
+use futures::stream::{SplitSink, SplitStream, Stream, StreamExt};
 use native_tls::TlsConnector;
-use tokio::codec::{Decoder, Framed};
 use tokio::io::{AsyncRead, AsyncWrite};
 use tokio::net::TcpStream;
 use tokio::prelude::*;
-use tokio::stream::Stream;
 use tokio_tls::{TlsConnector as TokioTlsConnector, TlsStream};
+use tokio_util::codec::{Decoder, Framed};
 
-use crate::proto::{CodecError, Command, IrcCodec, Message};
+use crate::proto::{Command, IrcCodec, Message};
 
 pub use self::config::Config;
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum ClientError {
-    Io(io::Error),
-    Tls(native_tls::Error),
-}
-
-impl From<io::Error> for ClientError {
-    fn from(err: io::Error) -> Self {
-        ClientError::Io(err)
-    }
-}
-
-impl From<native_tls::Error> for ClientError {
-    fn from(err: native_tls::Error) -> Self {
-        ClientError::Tls(err)
-    }
+    #[error("fuck")]
+    Io(#[from] io::Error),
+    #[error("fuck")]
+    Tls(#[from] native_tls::Error),
 }
 
 pub struct Client {
@@ -45,7 +36,7 @@ pub struct Client {
 }
 
 impl Client {
-    pub async fn with_config(config: Config) -> Result<Self, ClientError> {
+    pub async fn with_config(config: Config) -> Result<Self> {
         let mut addrs = (config.host.as_ref(), config.port).to_socket_addrs()?;
         let mut stream = TcpStream::connect(addrs.next().unwrap()).await?;
 
@@ -56,7 +47,7 @@ impl Client {
         } else {
             ClientStream::Plain(stream)
         };
-        let stream = IrcCodec.framed(stream);
+        let stream = IrcCodec::new().framed(stream);
         let (sink, stream) = stream.split();
         let (filter_tx, filter_rx) = mpsc::channel();
         let client = Client {
@@ -70,13 +61,15 @@ impl Client {
 
     pub async fn register(&mut self) {
         self.send(Message {
+            tags: None,
             prefix: None,
-            command: Command::Nick(self.config.nick.clone()),
+            command: Command::NICK(self.config.nick.clone()),
         })
         .await;
         self.send(Message {
+            tags: None,
             prefix: None,
-            command: Command::User(
+            command: Command::USER(
                 self.config.nick.clone(),
                 self.config.nick.clone(),
                 self.config.nick.clone(),
@@ -92,7 +85,7 @@ impl Client {
 }
 
 impl Stream for Client {
-    type Item = Result<Message, CodecError>;
+    type Item = Result<Message>;
 
     fn poll_next(self: Pin<&mut Self>, context: &mut Context) -> Poll<Option<Self::Item>> {
         Stream::poll_next(Pin::new(&mut self.get_mut().stream), context)
