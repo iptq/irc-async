@@ -1779,7 +1779,7 @@ impl FromStr for BatchSubCommand {
 mod test {
     use super::Command;
     use super::Response;
-    use proto::Message;
+    use crate::proto::Message;
 
     #[test]
     fn format_response() {

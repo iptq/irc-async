@@ -31,8 +31,7 @@ impl Message {
     ///
     /// # Example
     /// ```
-    /// # extern crate irc;
-    /// # use irc::client::prelude::*;
+    /// # use irc_async::proto::*;
     /// # fn main() {
     /// let message = Message::new(
     ///     Some("nickname!username@hostname"), "JOIN", vec!["#channel"], None
@@ -69,8 +68,7 @@ impl Message {
     ///
     /// # Example
     /// ```
-    /// # extern crate irc;
-    /// # use irc::client::prelude::*;
+    /// # use irc_async::proto::*;
     /// # fn main() {
     /// let message = Message::new(
     ///     Some("nickname!username@hostname"), "JOIN", vec!["#channel"], None
@@ -99,8 +97,7 @@ impl Message {
     ///
     /// # Example
     /// ```
-    /// # extern crate irc;
-    /// # use irc::client::prelude::*;
+    /// # use irc_async::proto::*;
     /// # fn main() {
     /// let msg1 = Message::new(
     ///     Some("ada"), "PRIVMSG", vec!["#channel"], Some("Hi, everyone!")
@@ -124,8 +121,7 @@ impl Message {
     ///
     /// # Example
     /// ```
-    /// # extern crate irc;
-    /// # use irc::client::prelude::*;
+    /// # use irc_async::proto::*;
     /// # fn main() {
     /// let msg = Message::new(
     ///     Some("ada"), "PRIVMSG", vec!["#channel"], Some("Hi, everyone!")
