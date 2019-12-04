@@ -12,7 +12,7 @@ use futures::sink::SinkExt;
 use futures::stream::{Stream, StreamExt};
 use native_tls::TlsConnector;
 use tokio::net::TcpStream;
-use tokio_tls::{TlsConnector as TokioTlsConnector};
+use tokio_tls::TlsConnector as TokioTlsConnector;
 use tokio_util::codec::{Decoder, LinesCodecError};
 
 use crate::client::stream::ClientStream;
@@ -20,32 +20,44 @@ use crate::proto::{Command, IrcCodec, IrcError, Message};
 
 pub use self::config::Config;
 
+/// An error that could arise from running the client
 #[derive(Debug, Error)]
 pub enum ClientError {
-    #[error("fuck")]
+    /// IO error
+    #[error("io error: {0}")]
     Io(#[from] io::Error),
-    #[error("fuck")]
+
+    /// Tls error
+    #[error("tls error: {0}")]
     Tls(#[from] native_tls::Error),
-    #[error("fuck")]
+
+    /// Protocol error
+    #[error("protocol error: {0}")]
     Proto(#[from] IrcError),
-    #[error("fuck")]
+
+    /// Mpsc send error
+    #[error("mpsc error: {0}")]
     Send(#[from] mpsc::SendError),
-    #[error("fuck")]
+
+    /// Line codec error
+    #[error("line codec error: {0}")]
     LinesCodec(#[from] LinesCodecError),
 }
 
 type Result<T> = std::result::Result<T, ClientError>;
 
+/// An async IRC client
 pub struct Client {
     config: Config,
     stream: Pin<Box<dyn Stream<Item = Result<Message>>>>,
     tx: UnboundedSender<Message>,
 }
 
-pub type Osu = Pin<Box<dyn Future<Output = Result<()>> + Send>>;
+pub type ClientFuture = Pin<Box<dyn Future<Output = Result<()>> + Send>>;
 
 impl Client {
-    pub async fn with_config(config: Config) -> Result<(Self, Osu)> {
+    /// Create a new client with the specified config
+    pub async fn with_config(config: Config) -> Result<(Self, ClientFuture)> {
         let mut addrs = (config.host.as_ref(), config.port).to_socket_addrs()?;
         let stream = TcpStream::connect(addrs.next().unwrap()).await?;
 
@@ -87,7 +99,7 @@ impl Client {
             }
         });
 
-        let osu = filter_rx
+        let fut = filter_rx
             .map(Ok)
             .forward(sink)
             .map_err(ClientError::from)
@@ -98,9 +110,10 @@ impl Client {
             stream: stream.boxed(),
             tx,
         };
-        Ok((client, osu))
+        Ok((client, fut))
     }
 
+    /// Send the client registration information to the server
     pub async fn register(&mut self) -> Result<()> {
         self.send(Message {
             tags: None,
@@ -120,6 +133,7 @@ impl Client {
         .await
     }
 
+    /// Send a Message to the server
     pub async fn send(&mut self, message: Message) -> Result<()> {
         self.tx.send(message).await?;
         self.tx.flush().await?;

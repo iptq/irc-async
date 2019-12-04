@@ -139,7 +139,7 @@ impl Message {
                 }
                 ret.push(';');
             }
-            ret.pop();
+            let _ = ret.pop();
             ret.push(' ');
         }
         if let Some(ref prefix) = self.prefix {

@@ -11,7 +11,7 @@ async fn run() -> Result<()> {
         ssl: false,
         nick: "hello".into(),
     };
-    let (mut client, osu) = Client::with_config(config).await?;
+    let (mut client, fut) = Client::with_config(config).await?;
     client.register().await?;
 
     let handler = async {
@@ -21,7 +21,7 @@ async fn run() -> Result<()> {
         }
     };
 
-    future::join(osu, handler).map(|(first, _)| first).await?;
+    future::join(fut, handler).map(|(first, _)| first).await?;
 
     Ok(())
 }

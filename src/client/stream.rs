@@ -4,7 +4,7 @@ use std::task::{Context, Poll};
 
 use tokio::io::{AsyncRead, AsyncWrite};
 use tokio::net::TcpStream;
-use tokio_tls::{TlsStream};
+use tokio_tls::TlsStream;
 
 pub enum ClientStream {
     Plain(TcpStream),
