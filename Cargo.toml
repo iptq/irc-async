@@ -2,7 +2,9 @@
 name = "irc-async"
 version = "0.1.0"
 authors = ["Michael Zhang <iptq@protonmail.com>"]
+description = "async irc library"
 edition = "2018"
+license = "MPL 2.0"
 
 [dependencies]
 thiserror = "1.0"
