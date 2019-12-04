@@ -1,9 +1,13 @@
+use std::io;
+
+use tokio_util::codec::LinesCodecError;
+
 /// The main crate-wide error type.
 #[derive(Debug, Error)]
 pub enum IrcError {
-    // /// An internal I/O error.
-    // #[error("an io error occurred")]
-    // Io(#[source] IoError),
+    /// An internal I/O error.
+    #[error("an io error occurred")]
+    Io(#[from] io::Error),
 
     // /// An internal TLS error.
     // #[error("a TLS error occurred")]
@@ -35,7 +39,7 @@ pub enum IrcError {
     //     cause: ConfigError,
     // },
     /// Error for invalid messages.
-    #[error("invalid message: {}", string)]
+    #[error("invalid message: {string}")]
     InvalidMessage {
         /// The string that failed to parse.
         string: String,
@@ -66,7 +70,9 @@ pub enum IrcError {
     //     /// The data that failed to encode or decode.
     //     data: String,
     // },
-
+    /// Failed to encode or decode a line
+    #[error("line codec failed: {0}")]
+    Codec(#[from] LinesCodecError),
     // /// All specified nicknames were in use or unusable.
     // #[error("none of the specified nicknames were usable")]
     // NoUsableNick,

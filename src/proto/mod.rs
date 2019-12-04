@@ -20,4 +20,4 @@ pub use self::irc::IrcCodec;
 pub use self::message::Message;
 pub use self::mode::{ChannelMode, Mode, UserMode};
 pub use self::response::Response;
-use errors::*;
+pub use errors::*;

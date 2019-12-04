@@ -1,9 +1,11 @@
 //! Implementation of IRC codec for Tokio.
-use anyhow::{Error, Result};
-use bytes::BytesMut;
-use tokio_util::codec::{Decoder, Encoder, LinesCodec};
+use std::io;
 
-use crate::proto::message::Message;
+use bytes::BytesMut;
+use tokio_util::codec::{Decoder, Encoder, LinesCodec, LinesCodecError};
+
+use super::errors::IrcError;
+use super::message::Message;
 
 /// An IRC codec built around an inner codec.
 pub struct IrcCodec {
@@ -36,14 +38,14 @@ impl IrcCodec {
 
 impl Decoder for IrcCodec {
     type Item = Message;
-    type Error = Error;
+    type Error = IrcError;
 
-    fn decode(&mut self, src: &mut BytesMut) -> Result<Option<Message>> {
-        let result = self.inner.decode(src).map_err(Error::from).and_then(|res| {
-            res.map_or(Ok(None), |msg| {
-                msg.parse::<Message>().map(Some).map_err(Error::from)
-            })
-        });
+    fn decode(&mut self, src: &mut BytesMut) -> Result<Option<Message>, Self::Error> {
+        let result = self
+            .inner
+            .decode(src)
+            .map_err(IrcError::from)
+            .and_then(|res| res.map_or(Ok(None), |msg| msg.parse::<Message>().map(Some)));
         println!(" << {:?}", result);
         result
     }
@@ -51,12 +53,12 @@ impl Decoder for IrcCodec {
 
 impl Encoder for IrcCodec {
     type Item = Message;
-    type Error = anyhow::Error;
+    type Error = IrcError;
 
-    fn encode(&mut self, msg: Message, dst: &mut BytesMut) -> Result<()> {
+    fn encode(&mut self, msg: Message, dst: &mut BytesMut) -> Result<(), Self::Error> {
         println!(">> {:?}", msg);
         self.inner
             .encode(IrcCodec::sanitize(msg.to_string()), dst)
-            .map_err(Error::from)
+            .map_err(IrcError::from)
     }
 }

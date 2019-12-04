@@ -3,8 +3,6 @@ use std::borrow::ToOwned;
 use std::fmt::{Display, Formatter, Result as FmtResult};
 use std::str::FromStr;
 
-use anyhow::{Error, Result};
-
 use crate::proto::{ChannelExt, Command};
 use crate::proto::{IrcError, MessageParseError};
 
@@ -167,9 +165,9 @@ impl From<Command> for Message {
 }
 
 impl FromStr for Message {
-    type Err = Error;
+    type Err = IrcError;
 
-    fn from_str(s: &str) -> Result<Message> {
+    fn from_str(s: &str) -> Result<Message, Self::Err> {
         if s.is_empty() {
             return Err(IrcError::InvalidMessage {
                 string: s.to_owned(),
