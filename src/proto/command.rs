@@ -216,6 +216,7 @@ fn stringify(cmd: &str, args: &[&str], suffix: Option<&str>) -> String {
 }
 
 impl<'a> From<&'a Command> for String {
+    #[allow(clippy::many_single_char_names)]
     fn from(cmd: &'a Command) -> String {
         match *cmd {
             Command::PASS(ref p) => stringify("PASS", &[], Some(p)),
@@ -463,6 +464,7 @@ impl<'a> From<&'a Command> for String {
 
 impl Command {
     /// Constructs a new Command.
+    #[allow(clippy::complexity)]
     pub fn new(
         cmd: &str,
         args: Vec<&str>,
@@ -542,10 +544,13 @@ impl Command {
                 None => {
                     if args[0].is_channel_name() {
                         let arg = args[1..].join(" ");
-                        Command::ChannelMODE(args[0].to_owned(), Mode::as_channel_modes(&arg)?)
+                        Command::ChannelMODE(
+                            args[0].to_owned(),
+                            Mode::from_channel_mode_string(&arg)?,
+                        )
                     } else {
                         let arg = args[1..].join(" ");
-                        Command::UserMODE(args[0].to_owned(), Mode::as_user_modes(&arg)?)
+                        Command::UserMODE(args[0].to_owned(), Mode::from_user_mode_string(&arg)?)
                     }
                 }
             }

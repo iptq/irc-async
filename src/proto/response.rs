@@ -412,8 +412,8 @@ impl Response {
     /// This error consideration is according to RFC2812, but is rather simplistic. It considers all
     /// response codes above 400 to be errors, which misclassifies some extensions (e.g. from IRCv3)
     /// that add responses and errors both in the same range (typically 700s or 900s).
-    pub fn is_error(&self) -> bool {
-        *self as u16 >= 400
+    pub fn is_error(self) -> bool {
+        self as u16 >= 400
     }
 }
 

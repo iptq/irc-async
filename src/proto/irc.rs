@@ -1,25 +1,17 @@
 //! Implementation of IRC codec for Tokio.
-use std::io;
-
 use bytes::BytesMut;
-use tokio_util::codec::{Decoder, Encoder, LinesCodec, LinesCodecError};
+use tokio_util::codec::{Decoder, Encoder, LinesCodec};
 
 use super::errors::IrcError;
 use super::message::Message;
 
 /// An IRC codec built around an inner codec.
+#[derive(Default)]
 pub struct IrcCodec {
     inner: LinesCodec,
 }
 
 impl IrcCodec {
-    /// Creates a new instance of IrcCodec wrapping a LineCodec with the specific encoding.
-    pub fn new() -> IrcCodec {
-        IrcCodec {
-            inner: LinesCodec::new(),
-        }
-    }
-
     /// Sanitizes the input string by cutting up to (and including) the first occurence of a line
     /// terminiating phrase (`\r\n`, `\r`, or `\n`). This is used in sending messages back to
     /// prevent the injection of additional commands.

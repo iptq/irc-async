@@ -56,7 +56,7 @@ impl Message {
         suffix: Option<&str>,
     ) -> Result<Message, MessageParseError> {
         Ok(Message {
-            tags: tags,
+            tags,
             prefix: prefix.map(|s| s.to_owned()),
             command: Command::new(command, args, suffix)?,
         })
@@ -124,10 +124,10 @@ impl Message {
     /// let msg = Message::new(
     ///     Some("ada"), "PRIVMSG", vec!["#channel"], Some("Hi, everyone!")
     /// ).unwrap();
-    /// assert_eq!(msg.to_string(), ":ada PRIVMSG #channel :Hi, everyone!\r\n");
+    /// assert_eq!(msg.as_string(), ":ada PRIVMSG #channel :Hi, everyone!\r\n");
     /// # }
     /// ```
-    pub fn to_string(&self) -> String {
+    pub fn as_string(&self) -> String {
         let mut ret = String::new();
         if let Some(ref tags) = self.tags {
             ret.push('@');
@@ -172,8 +172,7 @@ impl FromStr for Message {
             return Err(IrcError::InvalidMessage {
                 string: s.to_owned(),
                 cause: MessageParseError::EmptyMessage,
-            }
-            .into());
+            });
         }
 
         let mut state = s;
@@ -218,7 +217,7 @@ impl FromStr for Message {
             let suffix = state
                 .find(" :")
                 .map(|i| &state[i + 2..state.len() - line_ending_len]);
-            state = state.find(" :").map_or("", |i| &state[..i + 1]);
+            state = state.find(" :").map_or("", |i| &state[..=i]);
             suffix
         } else {
             state = &state[..state.len() - line_ending_len];
@@ -235,8 +234,7 @@ impl FromStr for Message {
                 return Err(IrcError::InvalidMessage {
                     string: s.to_owned(),
                     cause: MessageParseError::InvalidCommand,
-                }
-                .into())
+                })
             }
             // If there's no arguments following the command, the rest of the state is the command.
             None => {
@@ -253,7 +251,6 @@ impl FromStr for Message {
                 string: s.to_owned(),
                 cause: e,
             }
-            .into()
         })
     }
 }
@@ -266,7 +263,7 @@ impl<'a> From<&'a str> for Message {
 
 impl Display for Message {
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
-        write!(f, "{}", self.to_string())
+        write!(f, "{}", self.as_string())
     }
 }
 
@@ -355,20 +352,20 @@ mod test {
     }
 
     #[test]
-    fn to_string() {
+    fn as_string() {
         let message = Message {
             tags: None,
             prefix: None,
             command: PRIVMSG(format!("test"), format!("Testing!")),
         };
-        assert_eq!(&message.to_string()[..], "PRIVMSG test :Testing!\r\n");
+        assert_eq!(&message.as_string()[..], "PRIVMSG test :Testing!\r\n");
         let message = Message {
             tags: None,
             prefix: Some(format!("test!test@test")),
             command: PRIVMSG(format!("test"), format!("Still testing!")),
         };
         assert_eq!(
-            &message.to_string()[..],
+            &message.as_string()[..],
             ":test!test@test PRIVMSG test :Still testing!\r\n"
         );
     }
@@ -439,7 +436,7 @@ mod test {
         let message =
             "@aaa=bbb;ccc;example.com/ddd=eee :test!test@test PRIVMSG test :Testing with \
              tags!\r\n";
-        assert_eq!(message.parse::<Message>().unwrap().to_string(), message);
+        assert_eq!(message.parse::<Message>().unwrap().as_string(), message);
     }
 
     #[test]

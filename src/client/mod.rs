@@ -4,19 +4,16 @@ mod stream;
 use std::io;
 use std::net::ToSocketAddrs;
 use std::pin::Pin;
-use std::sync::{Arc, Mutex};
 use std::task::{Context, Poll};
 
 use futures::channel::mpsc::{self, UnboundedSender};
-use futures::future::{self, Either, Future, FutureExt, Ready, TryFutureExt};
+use futures::future::{self, Either, Future, FutureExt, TryFutureExt};
 use futures::sink::SinkExt;
-use futures::stream::{FilterMap, SplitSink, SplitStream, Stream, StreamExt, TryStreamExt};
+use futures::stream::{Stream, StreamExt};
 use native_tls::TlsConnector;
-use tokio::io::{AsyncRead, AsyncWrite};
 use tokio::net::TcpStream;
-use tokio::prelude::*;
-use tokio_tls::{TlsConnector as TokioTlsConnector, TlsStream};
-use tokio_util::codec::{Decoder, Framed, LinesCodecError};
+use tokio_tls::{TlsConnector as TokioTlsConnector};
+use tokio_util::codec::{Decoder, LinesCodecError};
 
 use crate::client::stream::ClientStream;
 use crate::proto::{Command, IrcCodec, IrcError, Message};
@@ -50,7 +47,7 @@ pub type Osu = Pin<Box<dyn Future<Output = Result<()>> + Send>>;
 impl Client {
     pub async fn with_config(config: Config) -> Result<(Self, Osu)> {
         let mut addrs = (config.host.as_ref(), config.port).to_socket_addrs()?;
-        let mut stream = TcpStream::connect(addrs.next().unwrap()).await?;
+        let stream = TcpStream::connect(addrs.next().unwrap()).await?;
 
         let stream = if config.ssl {
             let connector: TokioTlsConnector = TlsConnector::new().unwrap().into();
@@ -60,34 +57,35 @@ impl Client {
             ClientStream::Plain(stream)
         };
 
-        let stream = IrcCodec::new().framed(stream);
+        let stream = IrcCodec::default().framed(stream);
         let (sink, stream) = stream.split();
         let (tx, filter_rx) = mpsc::unbounded();
-        let mut filter_tx = tx.clone();
+        let filter_tx = tx.clone();
 
-        let stream = stream
-            .filter_map(move |message| {
-                if let Ok(Message {
-                    command: Command::PING(code, _),
-                    ..
-                }) = message
-                {
-                    let mut filter_tx = filter_tx.clone();
-                    Either::Left(async move {
-                        filter_tx
-                            .send(Message {
-                                tags: None,
-                                prefix: None,
-                                command: Command::PONG(code, None),
-                            })
-                            .await;
-                        None
-                    })
-                } else {
-                    Either::Right(future::ready(Some(message)))
-                }
-            })
-            .map_err(ClientError::from);
+        let stream = stream.filter_map(move |message| {
+            if let Ok(Message {
+                command: Command::PING(code, _),
+                ..
+            }) = message
+            {
+                let mut filter_tx = filter_tx.clone();
+                Either::Left(async move {
+                    match filter_tx
+                        .send(Message {
+                            tags: None,
+                            prefix: None,
+                            command: Command::PONG(code, None),
+                        })
+                        .await
+                    {
+                        Ok(_) => None,
+                        Err(err) => Some(Err(ClientError::from(err))),
+                    }
+                })
+            } else {
+                Either::Right(future::ready(Some(message.map_err(ClientError::from))))
+            }
+        });
 
         let osu = filter_rx
             .map(Ok)

@@ -234,10 +234,10 @@ where
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            Mode::Plus(ref mode, Some(ref arg)) => write!(f, "{}{} {}", "+", mode, arg),
-            Mode::Minus(ref mode, Some(ref arg)) => write!(f, "{}{} {}", "-", mode, arg),
-            Mode::Plus(ref mode, None) => write!(f, "{}{}", "+", mode),
-            Mode::Minus(ref mode, None) => write!(f, "{}{}", "-", mode),
+            Mode::Plus(ref mode, Some(ref arg)) => write!(f, "+{} {}", mode, arg),
+            Mode::Minus(ref mode, Some(ref arg)) => write!(f, "+{} {}", mode, arg),
+            Mode::Plus(ref mode, None) => write!(f, "+{}", mode),
+            Mode::Minus(ref mode, None) => write!(f, "-{}", mode),
         }
     }
 }
@@ -251,7 +251,7 @@ enum PlusMinus {
 impl Mode<UserMode> {
     // TODO: turning more edge cases into errors.
     /// Parses the specified mode string as user modes.
-    pub fn as_user_modes(s: &str) -> Result<Vec<Mode<UserMode>>, MessageParseError> {
+    pub fn from_user_mode_string(s: &str) -> Result<Vec<Mode<UserMode>>, MessageParseError> {
         use self::PlusMinus::*;
 
         let mut res = vec![];
@@ -301,7 +301,7 @@ impl Mode<UserMode> {
 impl Mode<ChannelMode> {
     // TODO: turning more edge cases into errors.
     /// Parses the specified mode string as channel modes.
-    pub fn as_channel_modes(s: &str) -> Result<Vec<Mode<ChannelMode>>, MessageParseError> {
+    pub fn from_channel_mode_string(s: &str) -> Result<Vec<Mode<ChannelMode>>, MessageParseError> {
         use self::PlusMinus::*;
 
         let mut res = vec![];

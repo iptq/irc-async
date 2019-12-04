@@ -2,10 +2,9 @@ use std::io;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
-use native_tls::TlsConnector;
 use tokio::io::{AsyncRead, AsyncWrite};
 use tokio::net::TcpStream;
-use tokio_tls::{TlsConnector as TokioTlsConnector, TlsStream};
+use tokio_tls::{TlsStream};
 
 pub enum ClientStream {
     Plain(TcpStream),
